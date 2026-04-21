@@ -1,0 +1,175 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/*
+ * Design tokens — see _bmad-output/planning-artifacts/ux-design-specification.md
+ *
+ * Tailwind v4 is CSS-first: design tokens live in @theme here.
+ * Dark mode follows OS preference via @media (prefers-color-scheme: dark) —
+ * Tailwind v4's default `dark:` variant already binds to that media query,
+ * so no @custom-variant override is declared.
+ */
+
+@theme inline {
+  /* Semantic aliases for shadcn primitives (button, checkbox, sonner) */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-geist-mono);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+}
+
+@theme {
+  /* 10-step neutral scale — overrides Tailwind default neutral-* */
+  --color-neutral-50:  #fafafa;
+  --color-neutral-100: #f4f4f5;
+  --color-neutral-200: #e4e4e7;
+  --color-neutral-300: #d4d4d8;
+  --color-neutral-400: #a1a1aa;
+  --color-neutral-500: #71717a;
+  --color-neutral-600: #52525b;
+  --color-neutral-700: #3f3f46;
+  --color-neutral-800: #27272a;
+  --color-neutral-900: #18181b;
+  --color-neutral-950: #0a0a0a;
+
+  /* Single accent pair — reserved for focus states and focused-row indicator only */
+  --color-accent-light: #d97706;
+  --color-accent-dark:  #fbbf24;
+
+  /* Four-size type scale with line-heights */
+  --text-xs: 13px;
+  --text-xs--line-height: 1.4;
+  --text-base: 16px;
+  --text-base--line-height: 1.5;
+  --text-lg: 18px;
+  --text-lg--line-height: 1.3;
+  --text-xl: 20px;
+  --text-xl--line-height: 1.3;
+
+  /* Spacing on line-height rhythm, not 4px grid */
+  --spacing-xs:   0.25rem;
+  --spacing-sm:   0.5rem;
+  --spacing-base: 1rem;
+  --spacing-md:   1.5rem;
+  --spacing-lg:   2rem;
+  --spacing-xl:   3rem;
+
+  /* Motion tokens — every app animation must pick one of these three */
+  --duration-fast: 150ms;
+  --duration-base: 200ms;
+  --duration-slow: 250ms;
+
+  /* Reading width on desktop (600px, centered) */
+  --container-reading: 600px;
+}
+
+/*
+ * Raw CSS custom properties — mirror a subset of @theme so they are always
+ * emitted into the stylesheet (Tailwind v4 tree-shakes unused @theme tokens,
+ * but these tokens are part of the design system contract and must be exposed
+ * even before utilities reference them).
+ */
+:root {
+  /* Motion durations */
+  --duration-fast: 150ms;
+  --duration-base: 200ms;
+  --duration-slow: 250ms;
+
+  /* Accent pair — light mode uses accent-light, dark mode uses accent-dark */
+  --color-accent-light: #d97706;
+  --color-accent-dark: #fbbf24;
+}
+
+/* Light mode — #FAFAFA background, near-black foreground (WCAG AA) */
+:root {
+  --radius: 0.5rem;
+  --background: #fafafa;
+  --foreground: #18181b;
+  --card: #fafafa;
+  --card-foreground: #18181b;
+  --popover: #ffffff;
+  --popover-foreground: #18181b;
+  --primary: #18181b;
+  --primary-foreground: #fafafa;
+  --secondary: #f4f4f5;
+  --secondary-foreground: #18181b;
+  --muted: #f4f4f5;
+  --muted-foreground: #52525b;
+  --accent: #d97706;
+  --accent-foreground: #fafafa;
+  --destructive: #b91c1c;
+  --border: #e4e4e7;
+  --input: #e4e4e7;
+  --ring: #a1a1aa;
+}
+
+/* Dark mode — #0A0A0A background, triggered by OS preference */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #f4f4f5;
+    --card: #0a0a0a;
+    --card-foreground: #f4f4f5;
+    --popover: #18181b;
+    --popover-foreground: #f4f4f5;
+    --primary: #f4f4f5;
+    --primary-foreground: #0a0a0a;
+    --secondary: #27272a;
+    --secondary-foreground: #f4f4f5;
+    --muted: #27272a;
+    --muted-foreground: #a1a1aa;
+    --accent: #fbbf24;
+    --accent-foreground: #0a0a0a;
+    --destructive: #f87171;
+    --border: #27272a;
+    --input: #27272a;
+    --ring: #71717a;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+      Oxygen, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-weight: 400;
+  }
+}
+
+/* Honor OS reduced-motion preference — every transition/animation falls to instant */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0ms !important;
+    animation-duration: 0ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}
