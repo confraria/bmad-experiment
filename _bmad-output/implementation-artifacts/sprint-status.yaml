@@ -1,5 +1,5 @@
 # generated: 2026-04-21
-# last_updated: 2026-04-22 (Story 2.4 done)
+# last_updated: 2026-04-22 (Epic 2 done)
 # project: bmad-experiment
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-04-21
-last_updated: 2026-04-22 (Story 2.4 done)
+last_updated: 2026-04-22 (Epic 2 done)
 project: bmad-experiment
 project_key: NOKEY
 tracking_system: file-system
@@ -53,12 +53,12 @@ development_status:
   epic-1-retrospective: done
 
   # Epic 2: Manage
-  epic-2: in-progress
+  epic-2: done
   2-1-mark-todos-complete-with-tap-space: done
   2-2-delete-todos-via-swipe-mobile: done
   2-3-undo-toast-for-deletions: done
   2-4-completed-section-visual-distinction: done
-  epic-2-retrospective: optional
+  epic-2-retrospective: done
 
   # Epic 3: Trust
   epic-3: backlog
