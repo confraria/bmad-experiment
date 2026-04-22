@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { TodoSchema, NewTodoInputSchema, SyncPullQuerySchema } from '../schema';
+import {
+  TodoSchema,
+  NewTodoInputSchema,
+  SyncPullQuerySchema,
+  SyncPushBodySchema,
+} from '../schema';
 
 const validTodo = {
   id: '01ARZ3NDEKTSV4RRFFQ69G5FAV',
@@ -138,5 +143,83 @@ describe('SyncPullQuerySchema', () => {
 
   it('rejects unparseable since', () => {
     expect(() => SyncPullQuerySchema.parse({ clientId: validClientId, since: 'abc' })).toThrow();
+  });
+});
+
+describe('SyncPushBodySchema', () => {
+  const clientId = '01ARZ3NDEKTSV4RRFFQ69G5FAW';
+  const otherClientId = '01ARZ3NDEKTSV4RRFFQ69G5FAX';
+
+  const makeTodo = (overrides: Partial<typeof validTodo> = {}) => ({
+    ...validTodo,
+    clientId,
+    ...overrides,
+  });
+
+  it('accepts a valid batch with matching clientIds', () => {
+    const parsed = SyncPushBodySchema.parse({
+      clientId,
+      todos: [makeTodo({ id: '01ARZ3NDEKTSV4RRFFQ69G5FAV' })],
+    });
+    expect(parsed.todos).toHaveLength(1);
+  });
+
+  it('accepts an empty todos array', () => {
+    const parsed = SyncPushBodySchema.parse({ clientId, todos: [] });
+    expect(parsed.todos).toEqual([]);
+  });
+
+  // ULID alphabet: Crockford Base32, first char must be [0-7]
+  const ULID_CHARS = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+  const genUlid = (i: number): string => {
+    const base = '01ARZ3NDEKTSV4RRFFQ69G5FAV'.split('');
+    // vary last 5 chars based on i
+    for (let k = 0; k < 5; k++) {
+      base[25 - k] = ULID_CHARS[(i >> (k * 5)) & 0x1f];
+    }
+    return base.join('');
+  };
+
+  it('accepts a batch at the 500-todo boundary', () => {
+    const todos = Array.from({ length: 500 }, (_, i) => makeTodo({ id: genUlid(i) }));
+    expect(() => SyncPushBodySchema.parse({ clientId, todos })).not.toThrow();
+  });
+
+  it('rejects a batch over 500 todos', () => {
+    const todos = Array.from({ length: 501 }, (_, i) => makeTodo({ id: genUlid(i) }));
+    expect(() => SyncPushBodySchema.parse({ clientId, todos })).toThrow();
+  });
+
+  it('rejects a batch where any todo.clientId differs from body.clientId', () => {
+    expect(() =>
+      SyncPushBodySchema.parse({
+        clientId,
+        todos: [
+          makeTodo({ id: '01ARZ3NDEKTSV4RRFFQ69G5FAV' }),
+          makeTodo({ id: '01ARZ3NDEKTSV4RRFFQ69G5FA0', clientId: otherClientId }),
+        ],
+      }),
+    ).toThrow();
+  });
+
+  it('rejects a non-ULID body clientId', () => {
+    expect(() =>
+      SyncPushBodySchema.parse({ clientId: 'not-a-ulid', todos: [] }),
+    ).toThrow();
+  });
+
+  it('rejects a malformed todo in the array', () => {
+    expect(() =>
+      SyncPushBodySchema.parse({
+        clientId,
+        todos: [{ ...makeTodo(), text: '' }],
+      }),
+    ).toThrow();
+  });
+
+  it('rejects missing todos field', () => {
+    expect(() =>
+      SyncPushBodySchema.parse({ clientId } as unknown as { clientId: string; todos: unknown[] }),
+    ).toThrow();
   });
 });

@@ -40,3 +40,15 @@ export const SyncPullQuerySchema = z.object({
 });
 
 export type SyncPullQuery = z.infer<typeof SyncPullQuerySchema>;
+
+export const SyncPushBodySchema = z
+  .object({
+    clientId: ulid(),
+    todos: z.array(TodoSchema).max(500, 'batch exceeds 500 todos'),
+  })
+  .refine((b) => b.todos.every((t) => t.clientId === b.clientId), {
+    message: 'todo.clientId must match body.clientId',
+    path: ['todos'],
+  });
+
+export type SyncPushBody = z.infer<typeof SyncPushBodySchema>;
