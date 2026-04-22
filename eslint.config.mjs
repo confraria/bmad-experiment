@@ -13,6 +13,9 @@ const eslintConfig = defineConfig([
     "build/**",
     "coverage/**",
     "next-env.d.ts",
+    // Generated service worker bundle (Serwist output — build artifact)
+    "public/sw.js",
+    "public/sw.js.map",
   ]),
 ]);
 

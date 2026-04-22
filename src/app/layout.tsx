@@ -1,10 +1,21 @@
-import type { Metadata } from "next";
-import "./globals.css";
+import type { Metadata, Viewport } from 'next';
+import './globals.css';
 
 export const metadata: Metadata = {
-  title: "bmad-experiment",
+  title: 'bmad-experiment',
   description:
-    "A simple, fast todo app — create, view, complete, and delete personal tasks.",
+    'A simple, fast todo app — create, view, complete, and delete personal tasks.',
+  manifest: '/manifest.webmanifest',
+  applicationName: 'bmad',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'bmad',
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: '#fafafa',
 };
 
 export default function RootLayout({
