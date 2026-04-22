@@ -20,3 +20,5 @@ Items raised by reviewers that are real but not actionable in the story where th
 - No SSR hydration utility for `clientId` consumers. Trigger: first UI consumer outside `useEffect`.
 - `text.max(1000)` counts UTF-16 code units, not graphemes — [src/lib/schema.ts:5]. Trigger: multi-language / emoji-heavy content UX.
 - `resetDbForTests` `Dexie.delete` unhandled rejection — test-only HMR edge case. Trigger: flaky test.
+- Extract `__setUlidPrng` from `src/lib/ulid.ts` to a test-utils module. Reason: NODE_ENV guard is build-time-inlined in prod so runtime surface is already closed; extraction is a style preference. Trigger: if a generalized test-utils extraction pattern emerges for other modules.
+- Extract `WINDOW_OVERRIDE_KEY` + override path from `src/lib/clientId.ts` to a test-utils module. Reason and trigger: same as `__setUlidPrng` — paired follow-up.
