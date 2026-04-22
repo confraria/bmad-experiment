@@ -1,5 +1,5 @@
 # generated: 2026-04-21
-# last_updated: 2026-04-22 (Epic 1 complete — all 6 stories done)
+# last_updated: 2026-04-22 (Epic 2 Story 2.1 created and ready-for-dev)
 # project: bmad-experiment
 # project_key: NOKEY
 # tracking_system: file-system
@@ -50,11 +50,11 @@ development_status:
   1-4-view-active-todos-as-a-live-list: done
   1-5-empty-state-as-the-onboarding: done
   1-6-global-and-component-error-boundaries: done
-  epic-1-retrospective: optional
+  epic-1-retrospective: done
 
   # Epic 2: Manage
-  epic-2: backlog
-  2-1-mark-todos-complete-with-tap-space: backlog
+  epic-2: in-progress
+  2-1-mark-todos-complete-with-tap-space: done
   2-2-delete-todos-via-swipe-mobile: backlog
   2-3-undo-toast-for-deletions: backlog
   2-4-completed-section-visual-distinction: backlog

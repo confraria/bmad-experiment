@@ -9,7 +9,7 @@ export function useTodos(): Todo[] | undefined {
     getDb()
       .todos.orderBy('id')
       .reverse()
-      .filter((t) => !t.completed && t.deletedAt === null)
+      .filter((t) => t.deletedAt === null)
       .toArray(),
   );
 }

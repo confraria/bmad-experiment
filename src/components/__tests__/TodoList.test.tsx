@@ -50,7 +50,7 @@ describe('TodoList', () => {
     await seedTodo({ text: 'hello' });
 
     await waitFor(() => {
-      expect(screen.queryByRole('list')).not.toBeNull();
+      expect(screen.queryByRole('list', { name: 'Todos' })).not.toBeNull();
       expect(screen.queryAllByRole('listitem')).toHaveLength(1);
     });
 
@@ -76,6 +76,8 @@ describe('TodoList', () => {
       expect(screen.queryAllByRole('listitem')).toHaveLength(3);
     });
 
+    expect(screen.getByRole('list', { name: 'Todos' })).toBeDefined();
+
     const items = screen.getAllByRole('listitem').map((li) => li.textContent);
     expect(items).toEqual(['three', 'two', 'one']);
   });
@@ -97,28 +99,19 @@ describe('TodoList', () => {
     });
   });
 
-  it('excludes completed todos from the list', async () => {
-    await seedTodo({ text: 'visible' });
-    // Direct write of a completed row (test-only path, permitted per 2026-04-22 constraint relaxation)
-    const now = Date.now();
-    await getDb().todos.put({
-      id: newUlid(),
-      clientId: '01ARZ3NDEKTSV4RRFFQ69G5FAW',
-      text: 'already-done',
-      completed: true,
-      createdAt: now,
-      updatedAt: now,
-      deletedAt: null,
-    });
+  it('renders completed-but-not-deleted todos in the same list', async () => {
+    await seedTodo({ text: 'active' });
+    await new Promise((r) => setTimeout(r, 2));
+    await seedTodo({ text: 'already-done', completed: true });
 
     render(<TodoList />);
 
     await waitFor(() => {
-      expect(screen.queryAllByRole('listitem')).toHaveLength(1);
+      expect(screen.queryAllByRole('listitem')).toHaveLength(2);
     });
 
     const items = screen.getAllByRole('listitem').map((li) => li.textContent);
-    expect(items).toEqual(['visible']);
+    expect(items).toEqual(['already-done', 'active']);
   });
 
   it('excludes soft-deleted todos from the list', async () => {

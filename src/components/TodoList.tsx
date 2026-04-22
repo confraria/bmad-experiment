@@ -9,7 +9,7 @@ export function TodoList() {
   if (!todos || todos.length === 0) return <EmptyState />;
 
   return (
-    <ul className="flex w-full list-none flex-col" aria-label="Active todos">
+    <ul className="flex w-full list-none flex-col" aria-label="Todos">
       {todos.map((todo) => (
         <TodoItem key={todo.id} todo={todo} />
       ))}

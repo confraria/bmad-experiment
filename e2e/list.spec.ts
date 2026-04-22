@@ -78,7 +78,7 @@ test.describe('Story 1.4 — View active todos as a live list', () => {
 
   test('Story 1.5 AC #1 + #2: empty state renders NOTHING where the list would be', async ({ page }) => {
     // No <ul>, no <li>, no progressbar — the AddTodoInput is the entire empty state.
-    await expect(page.getByRole('list', { name: 'Active todos' })).toHaveCount(0);
+    await expect(page.getByRole('list', { name: 'Todos' })).toHaveCount(0);
     await expect(page.getByRole('listitem')).toHaveCount(0);
     await expect(page.getByRole('progressbar')).toHaveCount(0);
     // The input surface IS the empty state and must be present.

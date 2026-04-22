@@ -31,7 +31,7 @@ describe('useTodos', () => {
   it('returns todos sorted newest-first by ULID', async () => {
     await putTodo({ text: 'one' });
     await new Promise((r) => setTimeout(r, 2));
-    await putTodo({ text: 'two' });
+    await putTodo({ text: 'two', completed: true });
     await new Promise((r) => setTimeout(r, 2));
     await putTodo({ text: 'three' });
 
@@ -41,6 +41,25 @@ describe('useTodos', () => {
       expect(result.current).toHaveLength(3);
     });
     expect(result.current!.map((t) => t.text)).toEqual(['three', 'two', 'one']);
+  });
+
+  it('keeps completed rows visible but still excludes soft-deleted rows', async () => {
+    await putTodo({ text: 'active' });
+    await new Promise((r) => setTimeout(r, 2));
+    await putTodo({ text: 'completed', completed: true });
+    await new Promise((r) => setTimeout(r, 2));
+    await putTodo({ text: 'deleted', deletedAt: Date.now() });
+
+    const { result } = renderHook(() => useTodos());
+
+    await waitFor(() => {
+      expect(result.current).toHaveLength(2);
+    });
+
+    expect(result.current!.map((t) => ({ text: t.text, completed: t.completed }))).toEqual([
+      { text: 'completed', completed: true },
+      { text: 'active', completed: false },
+    ]);
   });
 
   it('reacts to a fresh write — new item appears at position 0', async () => {
