@@ -1,14 +1,25 @@
 'use client';
 
-import { updateTodo } from '@/lib/db';
+import { useRef } from 'react';
+import { animate } from 'motion/react';
+import { updateTodo, softDeleteTodo } from '@/lib/db';
 import type { Todo } from '@/lib/schema';
+
+const SWIPE_THRESHOLD_PX = 80;
 
 type TodoItemProps = {
   todo: Todo;
 };
 
 export function TodoItem({ todo }: TodoItemProps) {
+  const liRef = useRef<HTMLLIElement>(null);
+  const startX = useRef(0);
+  const currentDeltaX = useRef(0);
+  const isSwiping = useRef(false);
+  const isPointerDown = useRef(false);
+
   async function onToggle() {
+    if (isSwiping.current) return;
     try {
       await updateTodo(todo.id, { completed: !todo.completed });
     } catch (err) {
@@ -22,8 +33,60 @@ export function TodoItem({ todo }: TodoItemProps) {
     void onToggle();
   }
 
+  function onPointerDown(event: React.PointerEvent<HTMLLIElement>) {
+    startX.current = event.clientX;
+    currentDeltaX.current = 0;
+    isSwiping.current = false;
+    isPointerDown.current = true;
+  }
+
+  function onPointerMove(event: React.PointerEvent<HTMLLIElement>) {
+    if (!isPointerDown.current) return;
+    const deltaX = event.clientX - startX.current;
+    currentDeltaX.current = Math.min(0, deltaX);
+    if (Math.abs(deltaX) > 5) {
+      isSwiping.current = true;
+    }
+    if (liRef.current) {
+      liRef.current.style.transform = `translateX(${currentDeltaX.current}px)`;
+    }
+  }
+
+  function onPointerUp() {
+    isPointerDown.current = false;
+    if (isSwiping.current && currentDeltaX.current < -SWIPE_THRESHOLD_PX) {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        void softDeleteTodo(todo.id).catch((err) =>
+          console.error('TodoItem: softDeleteTodo failed', err),
+        );
+      } else {
+        void animate(liRef.current!, { x: -window.innerWidth }, { duration: 0.2, ease: 'easeOut' }).then(() =>
+          softDeleteTodo(todo.id).catch((err) =>
+            console.error('TodoItem: softDeleteTodo failed', err),
+          ),
+        );
+      }
+    } else {
+      void animate(liRef.current!, { x: 0 }, { type: 'spring', stiffness: 400, damping: 40 });
+    }
+    isSwiping.current = false;
+  }
+
+  function onPointerCancel() {
+    isPointerDown.current = false;
+    isSwiping.current = false;
+    void animate(liRef.current!, { x: 0 }, { type: 'spring', stiffness: 400, damping: 40 });
+  }
+
   return (
-    <li data-todo-id={todo.id}>
+    <li
+      ref={liRef}
+      data-todo-id={todo.id}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerCancel}
+    >
       <button
         type="button"
         aria-pressed={todo.completed}

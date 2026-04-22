@@ -4,10 +4,15 @@ import userEvent from '@testing-library/user-event';
 
 import { TodoItem } from '../TodoItem';
 import type { Todo } from '@/lib/schema';
-import { updateTodo } from '@/lib/db';
+import { updateTodo, softDeleteTodo } from '@/lib/db';
 
 vi.mock('@/lib/db', () => ({
   updateTodo: vi.fn(),
+  softDeleteTodo: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('motion/react', () => ({
+  animate: vi.fn().mockResolvedValue(undefined),
 }));
 
 function makeTodo(overrides: Partial<Todo> = {}): Todo {
@@ -116,5 +121,60 @@ describe('TodoItem', () => {
     expect(button.className).toMatch(/line-through/);
     expect(button.className).toMatch(/text-muted-foreground/);
     expect(button.className).toMatch(/opacity-60/);
+  });
+
+  it('swipe past threshold calls softDeleteTodo', async () => {
+    render(
+      <ul>
+        <TodoItem todo={makeTodo()} />
+      </ul>,
+    );
+    const item = screen.getByRole('listitem');
+
+    fireEvent.pointerDown(item, { clientX: 300 });
+    fireEvent.pointerMove(item, { clientX: 100 }); // delta = -200, past 80px threshold
+    fireEvent.pointerUp(item);
+
+    await vi.waitFor(() => {
+      expect(softDeleteTodo).toHaveBeenCalledWith('01ARZ3NDEKTSV4RRFFQ69G5FAV');
+    });
+    expect(updateTodo).not.toHaveBeenCalled();
+  });
+
+  it('swipe below threshold does NOT call softDeleteTodo', () => {
+    render(
+      <ul>
+        <TodoItem todo={makeTodo()} />
+      </ul>,
+    );
+    const item = screen.getByRole('listitem');
+
+    fireEvent.pointerDown(item, { clientX: 300 });
+    fireEvent.pointerMove(item, { clientX: 260 }); // delta = -40, below 80px threshold
+    fireEvent.pointerUp(item);
+
+    expect(softDeleteTodo).not.toHaveBeenCalled();
+  });
+
+  it('click after non-swipe pointer sequence still calls updateTodo', async () => {
+    const user = userEvent.setup();
+    render(
+      <ul>
+        <TodoItem todo={makeTodo()} />
+      </ul>,
+    );
+    const item = screen.getByRole('listitem');
+    const button = screen.getByRole('button', { name: 'buy milk' });
+
+    // Minimal pointer sequence (< 5px displacement → isSwiping stays false)
+    fireEvent.pointerDown(item, { clientX: 200 });
+    fireEvent.pointerMove(item, { clientX: 202 });
+    fireEvent.pointerUp(item);
+
+    // isSwiping is reset to false, so click should call updateTodo
+    await user.click(button);
+
+    expect(updateTodo).toHaveBeenCalledTimes(1);
+    expect(softDeleteTodo).not.toHaveBeenCalled();
   });
 });
