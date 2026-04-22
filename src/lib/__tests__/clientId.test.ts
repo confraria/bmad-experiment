@@ -54,16 +54,15 @@ describe('getClientId', () => {
     const spy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new Error('QuotaExceededError');
     });
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const id = getClientId();
     expect(id).toHaveLength(26);
-    expect(warnSpy).toHaveBeenCalled();
+    expect(errorSpy).toHaveBeenCalled();
     spy.mockRestore();
   });
 
   it('throws a descriptive error when window is undefined (SSR guard)', async () => {
     const originalWindow = globalThis.window;
-    // @ts-expect-error — simulate SSR
     delete (globalThis as { window?: unknown }).window;
     try {
       const mod = await import('../clientId');
@@ -82,12 +81,12 @@ describe('getClientId', () => {
     const spy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new Error('QuotaExceededError');
     });
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const id = getClientId();
-    const anyWarnArgContainsId = warnSpy.mock.calls.some((args) =>
+    const anyErrorArgContainsId = errorSpy.mock.calls.some((args) =>
       args.some((arg) => typeof arg === 'string' && arg.includes(id)),
     );
-    expect(anyWarnArgContainsId).toBe(false);
+    expect(anyErrorArgContainsId).toBe(false);
     spy.mockRestore();
   });
 });

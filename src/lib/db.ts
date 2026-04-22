@@ -34,17 +34,21 @@ export function getDb(): BmadDatabase {
 export type PutTodoInput = { text: string } & Partial<Pick<Todo, 'id' | 'completed' | 'deletedAt'>>;
 
 export async function putTodo(input: PutTodoInput): Promise<Todo> {
+  const db = getDb();
   const now = Date.now();
+  const id = input.id ?? newUlid();
+  const existing = input.id !== undefined ? await db.todos.get(id) : undefined;
+  const createdAt = existing?.createdAt ?? now;
   const todo: Todo = TodoSchema.parse({
-    id: input.id ?? newUlid(),
+    id,
     clientId: getClientId(),
     text: input.text,
     completed: input.completed ?? false,
-    createdAt: now,
+    createdAt,
     updatedAt: now,
     deletedAt: input.deletedAt ?? null,
   });
-  await getDb().todos.put(todo);
+  await db.todos.put(todo);
   return todo;
 }
 
@@ -53,21 +57,40 @@ export async function updateTodo(
   patch: Partial<Pick<Todo, 'text' | 'completed' | 'deletedAt'>>,
 ): Promise<Todo> {
   const db = getDb();
-  const current = await db.todos.get(id);
-  if (current === undefined) {
-    throw new Error(`updateTodo: no todo with id ${id}`);
-  }
-  const next: Todo = TodoSchema.parse({
-    ...current,
-    ...patch,
-    updatedAt: Date.now(),
+  return db.transaction('rw', db.todos, async () => {
+    const current = await db.todos.get(id);
+    if (current === undefined) {
+      throw new Error(`updateTodo: no todo with id ${id}`);
+    }
+    const isReviving = patch.deletedAt === null;
+    if (current.deletedAt !== null && !isReviving) {
+      throw new Error(`updateTodo: cannot mutate soft-deleted todo ${id}`);
+    }
+    const next: Todo = TodoSchema.parse({
+      ...current,
+      ...patch,
+      updatedAt: Date.now(),
+    });
+    await db.todos.put(next);
+    return next;
   });
-  await db.todos.put(next);
-  return next;
 }
 
 export async function softDeleteTodo(id: string): Promise<void> {
-  await updateTodo(id, { deletedAt: Date.now() });
+  const db = getDb();
+  await db.transaction('rw', db.todos, async () => {
+    const current = await db.todos.get(id);
+    if (current === undefined) {
+      throw new Error(`softDeleteTodo: no todo with id ${id}`);
+    }
+    if (current.deletedAt !== null) return;
+    const next: Todo = TodoSchema.parse({
+      ...current,
+      deletedAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+    await db.todos.put(next);
+  });
 }
 
 export async function resetDbForTests(): Promise<void> {

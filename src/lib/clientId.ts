@@ -2,6 +2,7 @@ import { newUlid } from './ulid';
 
 const STORAGE_KEY = 'bmad-experiment:clientId';
 const WINDOW_OVERRIDE_KEY = '__clientId';
+const ULID_REGEX = /^[0-7][0-9A-HJKMNP-TV-Z]{25}$/;
 
 let cached: string | undefined;
 
@@ -29,7 +30,7 @@ export function getClientId(): string {
 
   try {
     const existing = window.localStorage.getItem(STORAGE_KEY);
-    if (existing !== null && existing.length === 26) {
+    if (existing !== null && ULID_REGEX.test(existing)) {
       cached = existing;
       return existing;
     }
@@ -38,7 +39,10 @@ export function getClientId(): string {
     cached = generated;
     return generated;
   } catch {
-    console.warn('clientId: localStorage unavailable, using session ULID');
+    // Storage unavailable (Safari private mode, disabled cookies, quota).
+    // Identity becomes ephemeral for this session — every reload yields a new ULID.
+    // TODO(Story 3.7): forward this via the client error reporting endpoint.
+    console.error('clientId: localStorage unavailable — identity is ephemeral for this session');
     const fallback = newUlid();
     cached = fallback;
     return fallback;

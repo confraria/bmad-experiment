@@ -1,6 +1,6 @@
 # Story 1.2: Local Todo Store with Dexie and Client Identity
 
-Status: review
+Status: in-progress
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -64,7 +64,7 @@ so that todos can be persisted locally and the data layer is ready for sync in E
   - [x] Lazy-initialized singleton: export a `getDb(): BmadDatabase` that constructs the Dexie instance on first call; throw if `typeof window === 'undefined'`
   - [x] Mutation helpers (all exported, all bump `updatedAt` to `Date.now()`): `putTodo`, `updateTodo`, `softDeleteTodo`
   - [x] Test hook: export `resetDbForTests(): Promise<void>` that closes the Dexie connection and deletes the IndexedDB database (test-design hook #4). Guard behind `process.env.NODE_ENV === 'test'`.
-  - [x] Do NOT export raw `db.todos` — callers write only through helpers so the `updatedAt` invariant cannot be skipped
+  - [x] Do NOT **write** to raw `db.todos` from outside `src/lib/db.ts` — mutations flow through helpers so the `updatedAt` invariant cannot be skipped. _Read access via `getDb().todos.get(...)` is permitted for tests and future read-only consumers (relaxed 2026-04-22 during code review, decision N2)._
 
 - [x] **Task 6 — Write Vitest unit tests for src/lib** (AC: all)
   - [x] `src/lib/__tests__/ulid.test.ts` — 5 tests (26-char output, Crockford alphabet, 1000-unique, monotonic, `__setUlidPrng` determinism)
@@ -144,10 +144,10 @@ Architecture mandates numeric ms-epoch throughout (JSON, Dexie, Prisma). Always 
 ### Library & version notes (as of 2026-04)
 
 - **Dexie v4.x** — current stable. API shape identical to v3 for the subset used here (`version().stores()`, `Table.put/get/update/delete`, `where().above()`). v4 added `liveQuery` export but continue to use `useLiveQuery` from `dexie-react-hooks` for React wrapping (that lands in Story 1.4, not here).
-- **`dexie-react-hooks` v1.1.x** — compatible with React 19. Not consumed in this story, but install it now so Story 1.4 doesn't add churn to this commit's diff.
+- **`dexie-react-hooks` v4.x** — compatible with React 19. Not consumed in this story. _(Story originally specified v1.1.x; pinned to `^4.4.0` at install time per code-review decision N3, 2026-04-22.)_
 - **`zod` v3.x** — 4.x is not stable yet (avoid). `.nullable()` behavior and `z.infer` shape stable on 3.x.
-- **`ulid` v2.x** — exposes `ulid()` (random) and `monotonicFactory()` (strictly increasing). Use `monotonicFactory()` to satisfy the monotonic-uniqueness test. Package is ~1KB gz and uses `crypto.getRandomValues` in browsers by default (>=v2.0).
-- **Vitest v2.x** — current stable; Vite v6-compatible. `@vitejs/plugin-react` v4.x.
+- **`ulid` v3.x** — exposes `ulid()` (random) and `monotonicFactory()` (strictly increasing). API-compatible with v2 for the surface used here; uses `crypto.getRandomValues` in browsers by default. _(Story originally specified v2.x; pinned to `^3.0.2` per code-review decision N3, 2026-04-22.)_
+- **Vitest v4.x** — current stable; Vite v7-compatible. `@vitejs/plugin-react` v6.x, `@vitest/coverage-v8` matched to Vitest major. _(Story originally specified v2.x; upgraded to `^4.1.5` per code-review decision N3, 2026-04-22.)_
 - **React 19** — strict mode double-renders `useEffect` in dev. This story exposes primitives only (no hooks yet), so not directly impacted — but `clientId`/`db` modules must be idempotent so later hooks can call them safely twice.
 
 ### Tailwind v4 / Story 1.1 continuity (NOT directly in scope, but don't regress)
@@ -221,9 +221,9 @@ Commit message conventions observed:
 ### Latest Tech Information
 
 - Dexie v4 is stable and supports React 19 peer via `dexie-react-hooks` v1.1+. No migration from v3 concerns (greenfield).
-- `ulid` package v2+ uses Web Crypto in browsers; works in Node via `node:crypto`. No polyfill needed.
+- `ulid` package (v2 and later) uses Web Crypto in browsers; works in Node via `node:crypto`. No polyfill needed.
 - Zod 3.x is the target; Zod 4 is alpha and should be avoided for production code in April 2026.
-- Vitest v2.x is stable with Vite v6; v3 is in beta — avoid.
+- Vitest v4.x is stable with Vite v7 (project baseline per decision N3 on 2026-04-22).
 - `fake-indexeddb` v6.x works with Dexie v4 out of the box when imported via `fake-indexeddb/auto`.
 
 ### Project Context Reference
@@ -309,3 +309,30 @@ Jsdom/fake-indexeddb quirks encountered:
 ### Change Log
 
 - 2026-04-21 — Story 1.2 implemented: local Dexie store (v1 schema), Zod schemas for Todo/NewTodoInput, ULID helper with monotonic factory and test-mode PRNG hook, clientId module with localStorage persistence + quota fallback + SSR guard. Vitest harness wired with jsdom + fake-indexeddb; 40 unit tests; `src/lib/` line coverage 92.53%. No UI changes.
+- 2026-04-22 — Code review patches applied: `putTodo` preserves `createdAt` on id-resolving `put`; `updateTodo` wraps read-modify-write in a Dexie `'rw'` transaction and refuses to mutate soft-deleted rows (except revive via `{ deletedAt: null }`); `softDeleteTodo` is now idempotent and runs in its own transaction; `clientId` validates stored values against a Crockford-base32 ULID regex; storage-unavailable fallback uses a structured `console.error` with a `TODO(Story 3.7)` hook; `TodoSchema` gains chronology refinements (`updatedAt >= createdAt`, `deletedAt >= createdAt`) and ULID-regex validation on `id`/`clientId`. Dev-Notes raw-`db.todos` constraint relaxed to writes-only; library versions updated to the installed baseline. Two patches (extracting `__setUlidPrng` / `WINDOW_OVERRIDE_KEY` to a test-utils module) skipped from batch and left as action items above. All 40 tests pass, typecheck and lint clean. Story → in-progress.
+
+### Review Findings
+
+_Generated by `bmad-code-review` on 2026-04-22 (parallel adversarial review: Blind Hunter + Edge Case Hunter + Acceptance Auditor)._
+
+- [x] [Review][Decision] `putTodo` id override clobbers `createdAt` — [src/lib/db.ts:36-49] — **Resolution (2026-04-22):** `putTodo` now looks up the row when `input.id` is provided and preserves `existing.createdAt` instead of overwriting with `Date.now()`.
+- [x] [Review][Decision] Raw `db.todos` leaks via `getDb()` — [src/lib/db.ts:21-32] — **Resolution (2026-04-22):** Spec softened — the "do not export raw `db.todos`" constraint now applies only to writes. Read access via `getDb().todos.get(...)` is explicitly permitted for tests and future read-only consumers.
+- [x] [Review][Decision] Library versions drift from spec constraints — [package.json:20,19,175] — **Resolution (2026-04-22):** Accepted the installed upgrades (`ulid ^3.0.2`, `dexie-react-hooks ^4.4.0`, `vitest ^4.1.5`) as the new project baseline. Dev Notes updated to reflect the current pins.
+- [x] [Review][Decision] `clientId` quota-fallback produces ephemeral identity — [src/lib/clientId.ts:40-45] — **Resolution (2026-04-22):** Swapped `console.warn` → structured `console.error`; added TODO comment pointing at Story 3.7 where the client error-reporting endpoint will forward this event. Ephemeral fallback behavior retained.
+- [x] [Review][Patch] `updateTodo` is not transactional — [src/lib/db.ts] — **Resolution (2026-04-22):** Wrapped read-modify-write in `db.transaction('rw', db.todos, async () => {...})`.
+- [x] [Review][Patch] `softDeleteTodo` is not idempotent — [src/lib/db.ts] — **Resolution (2026-04-22):** Double-delete is now a no-op; early returns when `current.deletedAt !== null`. Inlined inside its own transaction rather than piggybacking on `updateTodo`.
+- [x] [Review][Patch] `updateTodo` can mutate soft-deleted rows — [src/lib/db.ts] — **Resolution (2026-04-22):** Throws when `current.deletedAt !== null` unless the patch is `{ deletedAt: null }` (explicit revive).
+- [x] [Review][Patch] `clientId` length-26 check is not ULID validation — [src/lib/clientId.ts] — **Resolution (2026-04-22):** Replaced with Crockford base32 regex `/^[0-7][0-9A-HJKMNP-TV-Z]{25}$/`.
+- [x] [Review][Patch] `TodoSchema` lacks chronology invariants — [src/lib/schema.ts] — **Resolution (2026-04-22):** Added two `.refine()` rules: `updatedAt >= createdAt` and `deletedAt === null || deletedAt >= createdAt`.
+- [x] [Review][Patch] `TodoSchema.id` validates length only — [src/lib/schema.ts] — **Resolution (2026-04-22):** `id` and `clientId` both validated against the ULID regex.
+- [ ] [Review][Patch] `__setUlidPrng` is exported from a production module — [src/lib/ulid.ts] — _Skipped from batch-apply on 2026-04-22; structural refactor with multiple valid shapes (internal wrapper file, test-utils module, or renamed private export). Follow up via a walk-through._
+- [ ] [Review][Patch] `WINDOW_OVERRIDE_KEY` lives in production source — [src/lib/clientId.ts:4,8-13] — _Skipped from batch-apply on 2026-04-22; paired with the `__setUlidPrng` follow-up — both concern the same test-utils extraction pattern._
+- [x] [Review][Defer] Multi-tab `clientId` first-mount race — [src/lib/clientId.ts] — Two tabs opened before either writes both generate a ULID; last write wins. Low probability pre-sync; address in Epic 3 alongside `BroadcastChannel` / `storage` event wiring.
+- [x] [Review][Defer] No `storage` event listener for cross-tab identity sync — [src/lib/clientId.ts] — address with Epic 3 sync engine
+- [x] [Review][Defer] Dexie schema v2 migration path not established — [src/lib/db.ts:13] — no real users yet; add when the first field is added post-release
+- [x] [Review][Defer] Unhandled Dexie write errors (Quota/VersionError/InvalidStateError) — [src/lib/db.ts:47,65] — Story 1.3+ adds UI callers; wrap there with a unified error boundary
+- [x] [Review][Defer] No SSR hydration utility for `clientId` consumers — no UI consumer exists yet
+- [x] [Review][Defer] `text.max(1000)` counts UTF-16 code units, not graphemes — [src/lib/schema.ts:5] — product-level decision; revisit when multi-language content is in scope
+- [x] [Review][Defer] `resetDbForTests` `Dexie.delete` unhandled rejection — test-only; HMR edge case
+
+_Reviewer also flagged (dismissed as noise): `__setUlidPrng` + `WINDOW_OVERRIDE_KEY` — raised as "prod attack surface" by Blind Hunter but captured as patches above; duplicate dismissed. `Date.now()` clock-skew — real but orthogonal and addressed by upcoming sync design._
