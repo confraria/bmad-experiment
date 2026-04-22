@@ -60,11 +60,7 @@ test.describe('Story 1.4 — View active todos as a live list', () => {
     const hydrationWarnings: string[] = [];
     page.on('console', (msg) => {
       const text = msg.text();
-      if (
-        msg.type() === 'error' ||
-        msg.type() === 'warning' ||
-        msg.type() === 'warn'
-      ) {
+      if (msg.type() === 'error' || msg.type() === 'warning') {
         if (/hydrat/i.test(text)) hydrationWarnings.push(text);
       }
     });
@@ -80,13 +76,31 @@ test.describe('Story 1.4 — View active todos as a live list', () => {
     expect(hydrationWarnings, hydrationWarnings.join('\n')).toHaveLength(0);
   });
 
-  test('AC #1: empty state renders an empty <ul> (no items, no spinner)', async ({ page }) => {
-    const list = page.getByRole('list', { name: 'Active todos' });
-    // Empty <ul> has zero height so Playwright treats it as "hidden" — we only
-    // require it to be attached. Story 1.5 will add visible EmptyState content.
-    await expect(list).toBeAttached();
+  test('Story 1.5 AC #1 + #2: empty state renders NOTHING where the list would be', async ({ page }) => {
+    // No <ul>, no <li>, no progressbar — the AddTodoInput is the entire empty state.
+    await expect(page.getByRole('list', { name: 'Active todos' })).toHaveCount(0);
     await expect(page.getByRole('listitem')).toHaveCount(0);
-    // No loading spinner, no progressbar — architecture guardrail
     await expect(page.getByRole('progressbar')).toHaveCount(0);
+    // The input surface IS the empty state and must be present.
+    await expect(page.locator('#add-todo-input')).toBeVisible();
+  });
+
+  test('Story 1.5 AC #3: adding the first todo does not shift the input', async ({ page }) => {
+    const input = page.locator('#add-todo-input');
+    const before = await input.boundingBox();
+    expect(before).not.toBeNull();
+
+    await input.click();
+    await input.fill('first ever todo');
+    await input.press('Enter');
+
+    await expect(page.getByRole('listitem')).toHaveCount(1);
+
+    const after = await input.boundingBox();
+    expect(after).not.toBeNull();
+    expect(Math.abs((after!.x) - (before!.x))).toBeLessThan(0.5);
+    expect(Math.abs((after!.y) - (before!.y))).toBeLessThan(0.5);
+    expect(Math.abs((after!.width) - (before!.width))).toBeLessThan(0.5);
+    expect(Math.abs((after!.height) - (before!.height))).toBeLessThan(0.5);
   });
 });

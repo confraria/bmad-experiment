@@ -2,14 +2,15 @@
 
 import { useTodos } from '@/hooks/useTodos';
 import { TodoItem } from './TodoItem';
+import { EmptyState } from './EmptyState';
 
 export function TodoList() {
   const todos = useTodos();
-  const items = todos ?? [];
+  if (!todos || todos.length === 0) return <EmptyState />;
 
   return (
     <ul className="flex w-full list-none flex-col" aria-label="Active todos">
-      {items.map((todo) => (
+      {todos.map((todo) => (
         <TodoItem key={todo.id} todo={todo} />
       ))}
     </ul>

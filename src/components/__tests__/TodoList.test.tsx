@@ -31,11 +31,34 @@ describe('TodoList', () => {
     cleanup();
   });
 
-  it('renders a <ul> with zero items when Dexie is empty', async () => {
-    render(<TodoList />);
-    const list = await screen.findByRole('list');
-    expect(list.tagName).toBe('UL');
+  it('renders NOTHING when Dexie is empty (Story 1.5)', async () => {
+    const { container } = render(<TodoList />);
     await waitFor(() => {
+      expect(screen.queryByRole('list')).toBeNull();
+      expect(screen.queryAllByRole('listitem')).toHaveLength(0);
+    });
+    expect(container.firstChild).toBeNull();
+  });
+
+  it('transitions cleanly between empty and populated as Dexie changes', async () => {
+    render(<TodoList />);
+
+    await waitFor(() => {
+      expect(screen.queryByRole('list')).toBeNull();
+    });
+
+    await seedTodo({ text: 'hello' });
+
+    await waitFor(() => {
+      expect(screen.queryByRole('list')).not.toBeNull();
+      expect(screen.queryAllByRole('listitem')).toHaveLength(1);
+    });
+
+    const [row] = await getDb().todos.toArray();
+    await getDb().todos.delete(row.id);
+
+    await waitFor(() => {
+      expect(screen.queryByRole('list')).toBeNull();
       expect(screen.queryAllByRole('listitem')).toHaveLength(0);
     });
   });
