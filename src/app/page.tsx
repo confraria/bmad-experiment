@@ -1,3 +1,5 @@
-export default function Home() {
-  return <main className="mx-auto w-full max-w-[600px] p-6" />;
+import { TodoApp } from '@/components/TodoApp';
+
+export default function Page() {
+  return <TodoApp />;
 }

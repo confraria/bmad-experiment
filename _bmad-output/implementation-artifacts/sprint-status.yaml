@@ -1,5 +1,5 @@
 # generated: 2026-04-21
-# last_updated: 2026-04-22 (Stories 1.1 and 1.2 done after code review, Epic 1 in-progress)
+# last_updated: 2026-04-22 (Stories 1.1, 1.2, 1.3 done, Epic 1 in-progress)
 # project: bmad-experiment
 # project_key: NOKEY
 # tracking_system: file-system
@@ -46,7 +46,7 @@ development_status:
   epic-1: in-progress
   1-1-project-scaffold-and-design-tokens: done
   1-2-local-todo-store-with-dexie-and-client-identity: done
-  1-3-add-todos-via-persistent-input: backlog
+  1-3-add-todos-via-persistent-input: done
   1-4-view-active-todos-as-a-live-list: backlog
   1-5-empty-state-as-the-onboarding: backlog
   1-6-global-and-component-error-boundaries: backlog

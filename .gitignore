@@ -43,3 +43,8 @@ next-env.d.ts
 # local tooling state
 .claude/settings.local.json
 .playwright-cli/
+
+# playwright test artifacts
+/test-results/
+/playwright-report/
+/playwright/.cache/
