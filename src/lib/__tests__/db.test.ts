@@ -96,4 +96,45 @@ describe('db helpers', () => {
     const created = await putTodo({ text: 'valid' });
     await expect(updateTodo(created.id, { text: '' })).rejects.toThrow();
   });
+
+  describe('bmad:mutation event', () => {
+    it('putTodo dispatches bmad:mutation once on success', async () => {
+      const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
+      await putTodo({ text: 'notify me' });
+      const mutationEvents = dispatchSpy.mock.calls
+        .map((c) => c[0])
+        .filter((e): e is CustomEvent => e.type === 'bmad:mutation');
+      expect(mutationEvents).toHaveLength(1);
+    });
+
+    it('updateTodo dispatches bmad:mutation on success', async () => {
+      const created = await putTodo({ text: 'start' });
+      const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
+      await updateTodo(created.id, { completed: true });
+      const mutationEvents = dispatchSpy.mock.calls
+        .map((c) => c[0])
+        .filter((e): e is CustomEvent => e.type === 'bmad:mutation');
+      expect(mutationEvents).toHaveLength(1);
+    });
+
+    it('softDeleteTodo dispatches bmad:mutation on first delete only (idempotent)', async () => {
+      const created = await putTodo({ text: 'fleeting' });
+      const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
+      await softDeleteTodo(created.id);
+      await softDeleteTodo(created.id); // second call is a no-op
+      const mutationEvents = dispatchSpy.mock.calls
+        .map((c) => c[0])
+        .filter((e): e is CustomEvent => e.type === 'bmad:mutation');
+      expect(mutationEvents).toHaveLength(1);
+    });
+
+    it('failed mutations do NOT dispatch bmad:mutation', async () => {
+      const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
+      await expect(putTodo({ text: '' })).rejects.toThrow();
+      const mutationEvents = dispatchSpy.mock.calls
+        .map((c) => c[0])
+        .filter((e): e is CustomEvent => e.type === 'bmad:mutation');
+      expect(mutationEvents).toHaveLength(0);
+    });
+  });
 });

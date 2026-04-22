@@ -1,5 +1,5 @@
 # generated: 2026-04-21
-# last_updated: 2026-04-22 (Story 3.3 done)
+# last_updated: 2026-04-22 (Story 3.4 done)
 # project: bmad-experiment
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-04-21
-last_updated: 2026-04-22 (Story 3.3 done)
+last_updated: 2026-04-22 (Story 3.4 done)
 project: bmad-experiment
 project_key: NOKEY
 tracking_system: file-system
@@ -65,7 +65,7 @@ development_status:
   3-1-prisma-schema-and-turso-connection: done
   3-2-sync-pull-endpoint-get-api-sync: done
   3-3-sync-push-endpoint-post-api-sync: done
-  3-4-client-sync-engine-with-offline-queue: backlog
+  3-4-client-sync-engine-with-offline-queue: done
   3-5-online-offline-detection-and-indicator: backlog
   3-6-pwa-installability-with-serwist: backlog
   3-7-client-error-reporting-endpoint: backlog

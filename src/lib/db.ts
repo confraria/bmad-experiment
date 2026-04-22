@@ -31,6 +31,12 @@ export function getDb(): BmadDatabase {
   return instance;
 }
 
+function notifyMutation(): void {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('bmad:mutation'));
+  }
+}
+
 export type PutTodoInput = { text: string } & Partial<Pick<Todo, 'id' | 'completed' | 'deletedAt'>>;
 
 export async function putTodo(input: PutTodoInput): Promise<Todo> {
@@ -49,6 +55,7 @@ export async function putTodo(input: PutTodoInput): Promise<Todo> {
     deletedAt: input.deletedAt ?? null,
   });
   await db.todos.put(todo);
+  notifyMutation();
   return todo;
 }
 
@@ -57,7 +64,7 @@ export async function updateTodo(
   patch: Partial<Pick<Todo, 'text' | 'completed' | 'deletedAt'>>,
 ): Promise<Todo> {
   const db = getDb();
-  return db.transaction('rw', db.todos, async () => {
+  const next = await db.transaction('rw', db.todos, async () => {
     const current = await db.todos.get(id);
     if (current === undefined) {
       throw new Error(`updateTodo: no todo with id ${id}`);
@@ -66,31 +73,35 @@ export async function updateTodo(
     if (current.deletedAt !== null && !isReviving) {
       throw new Error(`updateTodo: cannot mutate soft-deleted todo ${id}`);
     }
-    const next: Todo = TodoSchema.parse({
+    const updated: Todo = TodoSchema.parse({
       ...current,
       ...patch,
       updatedAt: Date.now(),
     });
-    await db.todos.put(next);
-    return next;
+    await db.todos.put(updated);
+    return updated;
   });
+  notifyMutation();
+  return next;
 }
 
 export async function softDeleteTodo(id: string): Promise<void> {
   const db = getDb();
-  await db.transaction('rw', db.todos, async () => {
+  const mutated = await db.transaction('rw', db.todos, async () => {
     const current = await db.todos.get(id);
     if (current === undefined) {
       throw new Error(`softDeleteTodo: no todo with id ${id}`);
     }
-    if (current.deletedAt !== null) return;
+    if (current.deletedAt !== null) return false;
     const next: Todo = TodoSchema.parse({
       ...current,
       deletedAt: Date.now(),
       updatedAt: Date.now(),
     });
     await db.todos.put(next);
+    return true;
   });
+  if (mutated) notifyMutation();
 }
 
 export async function resetDbForTests(): Promise<void> {

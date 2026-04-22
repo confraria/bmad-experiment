@@ -1,10 +1,13 @@
 'use client';
 
+import { useSync } from '@/hooks/useSync';
 import { AddTodoInput } from './AddTodoInput';
 import { TodoList } from './TodoList';
 import { UndoToast } from './UndoToast';
 
 export function TodoApp() {
+  useSync();
+
   return (
     <div className="flex min-h-full w-full flex-col">
       <AddTodoInput />
