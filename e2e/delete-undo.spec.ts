@@ -68,6 +68,117 @@ async function swipeTodo(
   await row.dispatchEvent('pointerup', { clientX: endX, clientY: startY, pointerId: 1, bubbles: true });
 }
 
+test.describe('Story 2.3 — Undo toast for deletions', () => {
+  test.beforeEach(async ({ page }) => {
+    await resetAppState(page);
+  });
+
+  test('AC #1: swipe past threshold shows UndoToast with todo text and Undo button', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'mobile', 'mobile-only swipe');
+
+    await addTodo(page, 'Read a book');
+    const todos = await readTodos(page);
+    const todo = todos.find((t) => t.text === 'Read a book');
+    expect(todo).toBeDefined();
+
+    await swipeTodo(page, todo!.id, -200);
+
+    const toast = page.getByRole('status');
+    await expect(toast).toBeVisible();
+    await expect(toast).toContainText('Read a book');
+    await expect(page.getByRole('button', { name: 'Undo' })).toBeVisible();
+  });
+
+  test('AC #2: clicking Undo restores the todo to the list', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'mobile', 'mobile-only swipe');
+
+    await addTodo(page, 'Call dentist');
+    const todos = await readTodos(page);
+    const todo = todos.find((t) => t.text === 'Call dentist');
+    expect(todo).toBeDefined();
+
+    await swipeTodo(page, todo!.id, -200);
+    await expect(page.getByRole('status')).toBeVisible();
+
+    await page.getByRole('button', { name: 'Undo' }).click();
+
+    // Toast disappears
+    await expect(page.getByRole('status')).toHaveCount(0);
+
+    // Item reappears in list
+    await expect(page.getByRole('button', { name: 'Call dentist' })).toBeVisible();
+
+    // Verify deletedAt is null in DB
+    await expect.poll(async () => {
+      const updated = await readTodos(page);
+      const t = updated.find((entry) => entry.id === todo!.id);
+      return t?.deletedAt;
+    }).toBeNull();
+  });
+
+  test('AC #3: second delete replaces toast; prior deletion finalizes', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'mobile', 'mobile-only swipe');
+
+    await addTodo(page, 'Item A');
+    await addTodo(page, 'Item B');
+
+    const todos = await readTodos(page);
+    const todoA = todos.find((t) => t.text === 'Item A');
+    const todoB = todos.find((t) => t.text === 'Item B');
+    expect(todoA).toBeDefined();
+    expect(todoB).toBeDefined();
+
+    // Swipe A — toast appears for A
+    await swipeTodo(page, todoA!.id, -200);
+    await expect(page.getByRole('status')).toBeVisible();
+    await expect(page.getByRole('status')).toContainText('Item A');
+
+    // Swipe B — toast should replace with B
+    await swipeTodo(page, todoB!.id, -200);
+    await expect(page.getByRole('status')).toBeVisible();
+    await expect(page.getByRole('status')).toContainText('Item B');
+
+    // Only one toast visible
+    expect(await page.getByRole('status').count()).toBe(1);
+
+    // A is still deleted (no undo was performed for A)
+    await expect.poll(async () => {
+      const updated = await readTodos(page);
+      const t = updated.find((entry) => entry.id === todoA!.id);
+      return t?.deletedAt;
+    }).not.toBeNull();
+  });
+
+  test('AC #4: toast auto-dismisses after 5 seconds; item stays deleted', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'mobile', 'mobile-only swipe');
+
+    await page.clock.install();
+    // Re-navigate so the installed clock is active for the page
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+
+    await addTodo(page, 'Cleanup garage');
+    const todos = await readTodos(page);
+    const todo = todos.find((t) => t.text === 'Cleanup garage');
+    expect(todo).toBeDefined();
+
+    await swipeTodo(page, todo!.id, -200);
+    await expect(page.getByRole('status')).toBeVisible();
+
+    // Advance clock by 5 seconds → auto-dismiss
+    await page.clock.fastForward(5000);
+
+    await expect(page.getByRole('status')).toHaveCount(0);
+
+    // Item stays deleted
+    await expect.poll(async () => {
+      const updated = await readTodos(page);
+      const t = updated.find((entry) => entry.id === todo!.id);
+      return t?.deletedAt;
+    }).not.toBeNull();
+  });
+});
+
 test.describe('Story 2.2 — Delete todos via swipe (mobile)', () => {
   test.beforeEach(async ({ page }) => {
     await resetAppState(page);

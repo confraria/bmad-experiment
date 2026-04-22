@@ -4,6 +4,7 @@ import { useRef } from 'react';
 import { animate } from 'motion/react';
 import { updateTodo, softDeleteTodo } from '@/lib/db';
 import type { Todo } from '@/lib/schema';
+import { useUIStore } from '@/stores/useUIStore';
 
 const SWIPE_THRESHOLD_PX = 80;
 
@@ -13,6 +14,7 @@ type TodoItemProps = {
 
 export function TodoItem({ todo }: TodoItemProps) {
   const liRef = useRef<HTMLLIElement>(null);
+  const showUndoToast = useUIStore((s) => s.showUndoToast);
   const startX = useRef(0);
   const currentDeltaX = useRef(0);
   const isSwiping = useRef(false);
@@ -56,15 +58,17 @@ export function TodoItem({ todo }: TodoItemProps) {
     isPointerDown.current = false;
     if (isSwiping.current && currentDeltaX.current < -SWIPE_THRESHOLD_PX) {
       if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        showUndoToast(todo.id, todo.text);
         void softDeleteTodo(todo.id).catch((err) =>
           console.error('TodoItem: softDeleteTodo failed', err),
         );
       } else {
-        void animate(liRef.current!, { x: -window.innerWidth }, { duration: 0.2, ease: 'easeOut' }).then(() =>
-          softDeleteTodo(todo.id).catch((err) =>
+        void animate(liRef.current!, { x: -window.innerWidth }, { duration: 0.2, ease: 'easeOut' }).then(() => {
+          showUndoToast(todo.id, todo.text);
+          return softDeleteTodo(todo.id).catch((err) =>
             console.error('TodoItem: softDeleteTodo failed', err),
-          ),
-        );
+          );
+        });
       }
     } else {
       void animate(liRef.current!, { x: 0 }, { type: 'spring', stiffness: 400, damping: 40 });

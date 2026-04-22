@@ -15,6 +15,13 @@ vi.mock('motion/react', () => ({
   animate: vi.fn().mockResolvedValue(undefined),
 }));
 
+const mockShowUndoToast = vi.fn();
+
+vi.mock('@/stores/useUIStore', () => ({
+  useUIStore: (selector: (s: { showUndoToast: typeof mockShowUndoToast }) => unknown) =>
+    selector({ showUndoToast: mockShowUndoToast }),
+}));
+
 function makeTodo(overrides: Partial<Todo> = {}): Todo {
   return {
     id: '01ARZ3NDEKTSV4RRFFQ69G5FAV',
@@ -123,7 +130,7 @@ describe('TodoItem', () => {
     expect(button.className).toMatch(/opacity-60/);
   });
 
-  it('swipe past threshold calls softDeleteTodo', async () => {
+  it('swipe past threshold calls softDeleteTodo and showUndoToast', async () => {
     render(
       <ul>
         <TodoItem todo={makeTodo()} />
@@ -138,10 +145,11 @@ describe('TodoItem', () => {
     await vi.waitFor(() => {
       expect(softDeleteTodo).toHaveBeenCalledWith('01ARZ3NDEKTSV4RRFFQ69G5FAV');
     });
+    expect(mockShowUndoToast).toHaveBeenCalledWith('01ARZ3NDEKTSV4RRFFQ69G5FAV', 'buy milk');
     expect(updateTodo).not.toHaveBeenCalled();
   });
 
-  it('swipe below threshold does NOT call softDeleteTodo', () => {
+  it('swipe below threshold does NOT call softDeleteTodo or showUndoToast', () => {
     render(
       <ul>
         <TodoItem todo={makeTodo()} />
@@ -154,6 +162,7 @@ describe('TodoItem', () => {
     fireEvent.pointerUp(item);
 
     expect(softDeleteTodo).not.toHaveBeenCalled();
+    expect(mockShowUndoToast).not.toHaveBeenCalled();
   });
 
   it('click after non-swipe pointer sequence still calls updateTodo', async () => {
