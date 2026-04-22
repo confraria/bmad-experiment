@@ -92,7 +92,7 @@ test.describe('Story 1.3 — Add todos via persistent input', () => {
     expect(geometry.inputWidth).toBeLessThanOrEqual(600);
   });
 
-  test('AC #3: submit writes to Dexie, clears input, retains focus', async ({ page }) => {
+  test('AC #3: submit writes to Dexie, clears input, retains focus, and renders in the list', async ({ page }) => {
     const input = page.locator('#add-todo-input');
     await input.click();
     await input.fill('Buy milk');
@@ -109,6 +109,11 @@ test.describe('Story 1.3 — Add todos via persistent input', () => {
     expect(rows[0].deletedAt).toBeNull();
     expect(rows[0].id).toMatch(/^[0-7][0-9A-HJKMNP-TV-Z]{25}$/);
     expect(rows[0].clientId).toMatch(/^[0-7][0-9A-HJKMNP-TV-Z]{25}$/);
+
+    // Story 1.4: new item visible in the list
+    const items = page.getByRole('listitem');
+    await expect(items).toHaveCount(1);
+    await expect(items.first()).toHaveText('Buy milk');
   });
 
   test('AC #3: leading/trailing whitespace is trimmed before writing', async ({ page }) => {
