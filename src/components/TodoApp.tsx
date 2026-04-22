@@ -2,6 +2,7 @@
 
 import { useSync } from '@/hooks/useSync';
 import { AddTodoInput } from './AddTodoInput';
+import { OfflineIndicator } from './OfflineIndicator';
 import { TodoList } from './TodoList';
 import { UndoToast } from './UndoToast';
 
@@ -15,6 +16,7 @@ export function TodoApp() {
         <TodoList />
       </main>
       <UndoToast />
+      <OfflineIndicator />
     </div>
   );
 }
