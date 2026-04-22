@@ -107,3 +107,55 @@ test.describe('Story 2.1 — Mark todos complete with tap/Space', () => {
     await expect(page.getByRole('progressbar')).toHaveCount(0);
   });
 });
+
+test.describe('Story 2.4 — Completed section visual distinction', () => {
+  test.beforeEach(async ({ page }) => {
+    await resetAppState(page);
+  });
+
+  test('AC #1: completed todo appears below active todo in DOM', async ({ page }) => {
+    await addTodo(page, 'Todo A');
+    await addTodo(page, 'Todo B');
+
+    // Complete B (it's at the top since newest-first)
+    const rowB = page.getByRole('button', { name: 'Todo B' });
+    await rowB.click();
+    await expect(rowB).toHaveAttribute('aria-pressed', 'true');
+
+    // Both items still visible
+    const rowA = page.getByRole('button', { name: 'Todo A' });
+    await expect(rowA).toBeVisible();
+
+    // A (active) should be above B (completed) in the DOM
+    const allItems = page.locator('li');
+    const texts = await allItems.allTextContents();
+    const indexA = texts.findIndex((t) => t.includes('Todo A'));
+    const indexB = texts.findIndex((t) => t.includes('Todo B'));
+    expect(indexA).toBeLessThan(indexB);
+  });
+
+  test('AC #2: two separate <ul> elements rendered when both zones have items', async ({ page }) => {
+    await addTodo(page, 'Active item');
+    await addTodo(page, 'To complete');
+
+    const rowToComplete = page.getByRole('button', { name: 'To complete' });
+    await rowToComplete.click();
+    await expect(rowToComplete).toHaveAttribute('aria-pressed', 'true');
+
+    await expect(page.locator('ul')).toHaveCount(2);
+  });
+
+  test('AC #4: completed-only list shows completed zone without EmptyState', async ({ page }) => {
+    await addTodo(page, 'Only todo');
+    const row = page.getByRole('button', { name: 'Only todo' });
+    await row.click();
+    await expect(row).toHaveAttribute('aria-pressed', 'true');
+
+    // Item remains visible in completed zone
+    await expect(row).toBeVisible();
+
+    // List is still rendered (no EmptyState)
+    await expect(page.locator('ul')).toHaveCount(1);
+    await expect(page.locator('li')).toHaveCount(1);
+  });
+});

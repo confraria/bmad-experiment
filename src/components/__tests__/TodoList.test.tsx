@@ -99,7 +99,7 @@ describe('TodoList', () => {
     });
   });
 
-  it('renders completed-but-not-deleted todos in the same list', async () => {
+  it('renders active todos above completed todos in separate zones', async () => {
     await seedTodo({ text: 'active' });
     await new Promise((r) => setTimeout(r, 2));
     await seedTodo({ text: 'already-done', completed: true });
@@ -110,8 +110,26 @@ describe('TodoList', () => {
       expect(screen.queryAllByRole('listitem')).toHaveLength(2);
     });
 
+    // Active zone first, completed zone second
     const items = screen.getAllByRole('listitem').map((li) => li.textContent);
-    expect(items).toEqual(['already-done', 'active']);
+    expect(items).toEqual(['active', 'already-done']);
+
+    // Two separate <ul> elements
+    expect(screen.getAllByRole('list')).toHaveLength(2);
+  });
+
+  it('completed-only list shows completed zone and NOT EmptyState', async () => {
+    await seedTodo({ text: 'finished', completed: true });
+
+    const { container } = render(<TodoList />);
+
+    await waitFor(() => {
+      expect(screen.queryAllByRole('listitem')).toHaveLength(1);
+    });
+
+    expect(container.firstChild).not.toBeNull();
+    const items = screen.getAllByRole('listitem').map((li) => li.textContent);
+    expect(items).toEqual(['finished']);
   });
 
   it('excludes soft-deleted todos from the list', async () => {

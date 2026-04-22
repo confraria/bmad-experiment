@@ -8,11 +8,25 @@ export function TodoList() {
   const todos = useTodos();
   if (!todos || todos.length === 0) return <EmptyState />;
 
+  const active = todos.filter((t) => !t.completed);
+  const completed = todos.filter((t) => t.completed);
+
   return (
-    <ul className="flex w-full list-none flex-col" aria-label="Todos">
-      {todos.map((todo) => (
-        <TodoItem key={todo.id} todo={todo} />
-      ))}
-    </ul>
+    <>
+      {active.length > 0 && (
+        <ul className="flex w-full list-none flex-col" aria-label="Todos">
+          {active.map((todo) => (
+            <TodoItem key={todo.id} todo={todo} />
+          ))}
+        </ul>
+      )}
+      {completed.length > 0 && (
+        <ul className={`flex w-full list-none flex-col${active.length > 0 ? ' mt-6' : ''}`}>
+          {completed.map((todo) => (
+            <TodoItem key={todo.id} todo={todo} />
+          ))}
+        </ul>
+      )}
+    </>
   );
 }
