@@ -250,15 +250,20 @@ describe('sync engine — retry + backoff', () => {
   });
 
   it('drops the batch on 400 and advances lastPushAt', async () => {
-    await putTodo({ text: 'bad' });
+    await putTodo({ text: 'super-secret todo text' });
     const local = (await getDb().todos.toArray())[0];
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
-      if ((init as RequestInit | undefined)?.method === 'POST') {
-        return new Response(JSON.stringify({ error: { code: 'INVALID_REQUEST', message: 'bad' } }), {
-          status: 400,
-        });
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = String(input);
+      if (url.includes('/api/sync') && (init as RequestInit | undefined)?.method === 'POST') {
+        return new Response(
+          JSON.stringify({ error: { code: 'INVALID_REQUEST', message: 'bad' } }),
+          { status: 400 },
+        );
+      }
+      if (url.includes('/api/errors')) {
+        return new Response(null, { status: 204 });
       }
       return new Response(JSON.stringify({ todos: [] }), { status: 200 });
     });
@@ -270,6 +275,18 @@ describe('sync engine — retry + backoff', () => {
       'sync: dropping batch',
       expect.objectContaining({ status: 400, ids: [local.id] }),
     );
+
+    // Story 3.7 wiring: the drop path also fires a fire-and-forget POST to /api/errors
+    const errorsCall = fetchSpy.mock.calls.find((c) => String(c[0]).includes('/api/errors'));
+    expect(errorsCall).toBeDefined();
+    const errorsInit = errorsCall![1] as RequestInit;
+    expect(errorsInit.method).toBe('POST');
+    expect(errorsInit.keepalive).toBe(true);
+    const errorsBody = JSON.parse(errorsInit.body as string);
+    expect(errorsBody.ids).toEqual([local.id]);
+    expect(errorsBody.caughtAt).toBe('sync-engine');
+    // Architecture guardrail #3 — no user todo text in error reports
+    expect(JSON.stringify(errorsBody)).not.toContain('super-secret todo text');
   });
 });
 

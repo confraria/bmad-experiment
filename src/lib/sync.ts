@@ -61,6 +61,19 @@ class HttpError extends Error {
   }
 }
 
+function reportClientError(payload: Record<string, unknown>): void {
+  try {
+    fetch('/api/errors', {
+      method: 'POST',
+      keepalive: true,
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(payload),
+    }).catch(() => undefined);
+  } catch {
+    // Fire-and-forget: never block the engine on telemetry.
+  }
+}
+
 async function fetchWithRetry(input: string, init?: RequestInit): Promise<Response> {
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     try {
@@ -137,11 +150,18 @@ async function push(): Promise<void> {
     } catch (err) {
       if (err instanceof HttpError && err.status >= 400 && err.status < 500 && err.status !== 429) {
         // Permanent failure — drop this batch.
-        // TODO(Story 3.7): POST to /api/errors instead of console.error
-        console.error('sync: dropping batch', {
+        const logPayload = {
           status: err.status,
           ids: batch.map((b) => b.id),
           message: err.message,
+        };
+        console.error('sync: dropping batch', logPayload);
+        reportClientError({
+          ...logPayload,
+          message: `sync: POST /api/sync ${err.status} — dropping batch`,
+          clientId,
+          url: typeof window !== 'undefined' ? window.location.href : '',
+          caughtAt: 'sync-engine',
         });
         writeCursor(LAST_PUSH_AT, batch[batch.length - 1].updatedAt);
         continue;

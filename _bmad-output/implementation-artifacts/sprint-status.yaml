@@ -1,5 +1,5 @@
 # generated: 2026-04-21
-# last_updated: 2026-04-22 (Story 3.6 done)
+# last_updated: 2026-04-22 (Epic 3 done — Stories 3.1–3.7; 3.8 and 3.9 dropped)
 # project: bmad-experiment
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-04-21
-last_updated: 2026-04-22 (Story 3.6 done)
+last_updated: 2026-04-22 (Epic 3 done — Stories 3.1–3.7; 3.8 and 3.9 dropped)
 project: bmad-experiment
 project_key: NOKEY
 tracking_system: file-system
@@ -61,14 +61,14 @@ development_status:
   epic-2-retrospective: done
 
   # Epic 3: Trust
-  epic-3: backlog
+  epic-3: done
   3-1-prisma-schema-and-turso-connection: done
   3-2-sync-pull-endpoint-get-api-sync: done
   3-3-sync-push-endpoint-post-api-sync: done
   3-4-client-sync-engine-with-offline-queue: done
   3-5-online-offline-detection-and-indicator: done
   3-6-pwa-installability-with-serwist: done
-  3-7-client-error-reporting-endpoint: backlog
+  3-7-client-error-reporting-endpoint: done
   3-8-ci-pipeline: dropped
   3-9-vercel-deployment-wiring: dropped
   epic-3-retrospective: optional

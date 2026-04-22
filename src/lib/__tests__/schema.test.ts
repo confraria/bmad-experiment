@@ -4,6 +4,7 @@ import {
   NewTodoInputSchema,
   SyncPullQuerySchema,
   SyncPushBodySchema,
+  ErrorReportSchema,
 } from '../schema';
 
 const validTodo = {
@@ -220,6 +221,64 @@ describe('SyncPushBodySchema', () => {
   it('rejects missing todos field', () => {
     expect(() =>
       SyncPushBodySchema.parse({ clientId } as unknown as { clientId: string; todos: unknown[] }),
+    ).toThrow();
+  });
+});
+
+describe('ErrorReportSchema', () => {
+  const clientId = '01ARZ3NDEKTSV4RRFFQ69G5FAW';
+
+  it('accepts the minimum payload (message + clientId only)', () => {
+    const parsed = ErrorReportSchema.parse({ message: 'boom', clientId });
+    expect(parsed.message).toBe('boom');
+    expect(parsed.clientId).toBe(clientId);
+  });
+
+  it('accepts a full payload with optional fields', () => {
+    const parsed = ErrorReportSchema.parse({
+      message: 'render error',
+      clientId,
+      stack: 'at X (y.js:1:1)',
+      userAgent: 'Mozilla/5.0',
+      url: 'https://example.com/',
+      caughtAt: 'app',
+    });
+    expect(parsed.stack).toBe('at X (y.js:1:1)');
+    expect(parsed.caughtAt).toBe('app');
+  });
+
+  it('passes through unknown extra fields', () => {
+    const parsed = ErrorReportSchema.parse({
+      message: 'boom',
+      clientId,
+      severity: 'fatal',
+      release: 'v1.2.3',
+    }) as unknown as Record<string, unknown>;
+    expect(parsed.severity).toBe('fatal');
+    expect(parsed.release).toBe('v1.2.3');
+  });
+
+  it('rejects an empty message', () => {
+    expect(() => ErrorReportSchema.parse({ message: '', clientId })).toThrow();
+  });
+
+  it('rejects a missing message', () => {
+    expect(() => ErrorReportSchema.parse({ clientId })).toThrow();
+  });
+
+  it('rejects a missing clientId', () => {
+    expect(() => ErrorReportSchema.parse({ message: 'boom' })).toThrow();
+  });
+
+  it('rejects a non-ULID clientId', () => {
+    expect(() =>
+      ErrorReportSchema.parse({ message: 'boom', clientId: 'not-a-ulid' }),
+    ).toThrow();
+  });
+
+  it('rejects a message over 5000 chars', () => {
+    expect(() =>
+      ErrorReportSchema.parse({ message: 'a'.repeat(5_001), clientId }),
     ).toThrow();
   });
 });
