@@ -29,3 +29,14 @@ export const NewTodoInputSchema = z.object({
 });
 
 export type NewTodoInput = z.infer<typeof NewTodoInputSchema>;
+
+export const SyncPullQuerySchema = z.object({
+  clientId: ulid(),
+  since: z
+    .string({ required_error: 'since is required' })
+    .regex(/^\d+$/, 'since must be a non-negative integer')
+    .transform((s) => Number(s))
+    .pipe(z.number().int().nonnegative()),
+});
+
+export type SyncPullQuery = z.infer<typeof SyncPullQuerySchema>;

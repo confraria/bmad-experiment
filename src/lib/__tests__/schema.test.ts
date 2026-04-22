@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { TodoSchema, NewTodoInputSchema } from '../schema';
+import { TodoSchema, NewTodoInputSchema, SyncPullQuerySchema } from '../schema';
 
 const validTodo = {
   id: '01ARZ3NDEKTSV4RRFFQ69G5FAV',
@@ -95,5 +95,48 @@ describe('NewTodoInputSchema', () => {
 
   it('rejects text over 1000 chars', () => {
     expect(() => NewTodoInputSchema.parse({ text: 'a'.repeat(1001) })).toThrow();
+  });
+});
+
+describe('SyncPullQuerySchema', () => {
+  const validClientId = '01ARZ3NDEKTSV4RRFFQ69G5FAW';
+
+  it('accepts valid clientId and numeric string since', () => {
+    const parsed = SyncPullQuerySchema.parse({ clientId: validClientId, since: '1700000000000' });
+    expect(parsed.clientId).toBe(validClientId);
+    expect(parsed.since).toBe(1_700_000_000_000);
+  });
+
+  it('accepts since=0 for full initial sync', () => {
+    const parsed = SyncPullQuerySchema.parse({ clientId: validClientId, since: '0' });
+    expect(parsed.since).toBe(0);
+  });
+
+  it('rejects since as a number (must be a string from query params)', () => {
+    expect(() => SyncPullQuerySchema.parse({ clientId: validClientId, since: 42 })).toThrow();
+  });
+
+  it('rejects missing clientId', () => {
+    expect(() => SyncPullQuerySchema.parse({ since: '0' })).toThrow();
+  });
+
+  it('rejects missing since', () => {
+    expect(() => SyncPullQuerySchema.parse({ clientId: validClientId })).toThrow();
+  });
+
+  it('rejects non-ULID clientId', () => {
+    expect(() => SyncPullQuerySchema.parse({ clientId: 'not-a-ulid', since: '0' })).toThrow();
+  });
+
+  it('rejects negative since', () => {
+    expect(() => SyncPullQuerySchema.parse({ clientId: validClientId, since: '-5' })).toThrow();
+  });
+
+  it('rejects float since', () => {
+    expect(() => SyncPullQuerySchema.parse({ clientId: validClientId, since: '1.5' })).toThrow();
+  });
+
+  it('rejects unparseable since', () => {
+    expect(() => SyncPullQuerySchema.parse({ clientId: validClientId, since: 'abc' })).toThrow();
   });
 });
