@@ -1,5 +1,7 @@
 # bmad-experiment
 
+![CI](https://github.com/confraria/bmad-experiment/actions/workflows/ci.yml/badge.svg)
+
 A small, offline-first, keyboard-friendly personal todo app. One screen, no accounts, no categories, no deadlines. Built end-to-end using the [BMad Method](https://github.com/bmad-code-org/bmad-method) workflow for AI-assisted development.
 
 The app itself is intentionally modest — the interesting artifact is the workflow that produced it.
