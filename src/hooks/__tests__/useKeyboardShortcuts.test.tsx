@@ -244,6 +244,72 @@ describe('useKeyboardShortcuts', () => {
         expect(mockUpdateTodo).not.toHaveBeenCalled();
       });
     });
+
+    describe('when help overlay is open', () => {
+      beforeEach(() => {
+        useUIStore.setState({ helpOverlayOpen: true });
+      });
+
+      it('j does NOT move focus into list rows (Radix focus trap stays intact)', () => {
+        const { container } = render(<Fixture />);
+        const buttons = container.querySelectorAll<HTMLButtonElement>('[data-todo-id] button');
+
+        fireEvent.keyDown(window, { key: 'j' });
+
+        expect(document.activeElement).not.toBe(buttons[0]);
+        expect(document.activeElement).not.toBe(buttons[1]);
+      });
+
+      it('k does NOT move focus into list rows', () => {
+        const { container } = render(<Fixture />);
+        const buttons = container.querySelectorAll<HTMLButtonElement>('[data-todo-id] button');
+
+        fireEvent.keyDown(window, { key: 'k' });
+
+        expect(document.activeElement).not.toBe(buttons[0]);
+        expect(document.activeElement).not.toBe(buttons[1]);
+      });
+
+      it('n does NOT focus the add input', () => {
+        const { container } = render(<Fixture />);
+        const input = container.querySelector<HTMLInputElement>('#add-todo-input')!;
+
+        fireEvent.keyDown(window, { key: 'n' });
+
+        expect(document.activeElement).not.toBe(input);
+      });
+
+      it('Cmd+Backspace on a focused row does NOT soft-delete', () => {
+        const { container } = render(<Fixture />);
+        const firstBtn = container.querySelector<HTMLButtonElement>('[data-todo-id="ulid-1"] button')!;
+        firstBtn.focus();
+
+        fireEvent.keyDown(window, { key: 'Backspace', metaKey: true });
+
+        expect(mockSoftDeleteTodo).not.toHaveBeenCalled();
+      });
+
+      it('Cmd+Z with pending undo does NOT call updateTodo', () => {
+        render(<Fixture />);
+        useUIStore.setState({
+          helpOverlayOpen: true,
+          undoPendingTodo: { id: 'ulid-1', text: 'first' },
+        });
+
+        fireEvent.keyDown(window, { key: 'z', metaKey: true });
+
+        expect(mockUpdateTodo).not.toHaveBeenCalled();
+      });
+
+      it('? still works and closes the overlay', () => {
+        render(<Fixture />);
+        expect(useUIStore.getState().helpOverlayOpen).toBe(true);
+
+        fireEvent.keyDown(window, { key: '?', shiftKey: true });
+
+        expect(useUIStore.getState().helpOverlayOpen).toBe(false);
+      });
+    });
   });
 
   describe('mobile viewport', () => {

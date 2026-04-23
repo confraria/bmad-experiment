@@ -53,9 +53,13 @@ function undoIfPending(event: KeyboardEvent): void {
 }
 
 function onKeyDown(event: KeyboardEvent): void {
-  const modCombo = event.metaKey || event.ctrlKey;
-
   if (isEditableFocused()) return;
+
+  // When HelpOverlay is open, only '?' is allowed through (to close it).
+  // Radix traps DOM focus inside the Dialog, but keydown still bubbles to window.
+  if (useUIStore.getState().helpOverlayOpen && event.key !== '?') return;
+
+  const modCombo = event.metaKey || event.ctrlKey;
 
   if (modCombo && !event.shiftKey && event.key === 'Backspace') {
     deleteFocusedRow(event);

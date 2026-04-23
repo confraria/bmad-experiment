@@ -10,6 +10,7 @@ type UIStore = {
   dismissUndoToast: () => void;
   undoPendingDelete: () => Promise<void>;
   toggleHelpOverlay: () => void;
+  setHelpOverlayOpen: (open: boolean) => void;
 };
 
 let _undoTimerId: ReturnType<typeof setTimeout> | null = null;
@@ -46,5 +47,9 @@ export const useUIStore = create<UIStore>()((set, get) => ({
 
   toggleHelpOverlay() {
     set((s) => ({ helpOverlayOpen: !s.helpOverlayOpen }));
+  },
+
+  setHelpOverlayOpen(open) {
+    set({ helpOverlayOpen: open });
   },
 }));

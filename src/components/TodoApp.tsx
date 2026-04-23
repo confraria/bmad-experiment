@@ -3,6 +3,7 @@
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { useSync } from '@/hooks/useSync';
 import { AddTodoInput } from './AddTodoInput';
+import { HelpOverlay } from './HelpOverlay';
 import { OfflineIndicator } from './OfflineIndicator';
 import { TodoList } from './TodoList';
 import { UndoToast } from './UndoToast';
@@ -19,6 +20,7 @@ export function TodoApp() {
       </main>
       <UndoToast />
       <OfflineIndicator />
+      <HelpOverlay />
     </div>
   );
 }

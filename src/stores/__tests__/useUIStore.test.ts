@@ -82,6 +82,31 @@ describe('useUIStore', () => {
     });
   });
 
+  describe('setHelpOverlayOpen', () => {
+    it('setHelpOverlayOpen(true) sets helpOverlayOpen to true', () => {
+      expect(useUIStore.getState().helpOverlayOpen).toBe(false);
+      useUIStore.getState().setHelpOverlayOpen(true);
+      expect(useUIStore.getState().helpOverlayOpen).toBe(true);
+    });
+
+    it('setHelpOverlayOpen(false) sets helpOverlayOpen to false from true', () => {
+      useUIStore.getState().setHelpOverlayOpen(true);
+      expect(useUIStore.getState().helpOverlayOpen).toBe(true);
+      useUIStore.getState().setHelpOverlayOpen(false);
+      expect(useUIStore.getState().helpOverlayOpen).toBe(false);
+    });
+
+    it('final state is consistent across repeated calls', () => {
+      useUIStore.getState().setHelpOverlayOpen(false);
+      useUIStore.getState().setHelpOverlayOpen(false);
+      expect(useUIStore.getState().helpOverlayOpen).toBe(false);
+
+      useUIStore.getState().setHelpOverlayOpen(true);
+      useUIStore.getState().setHelpOverlayOpen(true);
+      expect(useUIStore.getState().helpOverlayOpen).toBe(true);
+    });
+  });
+
   describe('undoPendingDelete', () => {
     it('calls updateTodo(id, { deletedAt: null }) and clears state when a toast is pending', async () => {
       useUIStore.getState().showUndoToast('xyz', 'Walk dog');
