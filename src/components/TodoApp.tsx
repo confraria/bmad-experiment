@@ -1,5 +1,6 @@
 'use client';
 
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { useSync } from '@/hooks/useSync';
 import { AddTodoInput } from './AddTodoInput';
 import { OfflineIndicator } from './OfflineIndicator';
@@ -8,6 +9,7 @@ import { UndoToast } from './UndoToast';
 
 export function TodoApp() {
   useSync();
+  useKeyboardShortcuts();
 
   return (
     <div className="flex min-h-full w-full flex-col">

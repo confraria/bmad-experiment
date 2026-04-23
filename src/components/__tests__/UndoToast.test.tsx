@@ -2,12 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { UndoToast } from '../UndoToast';
 
-const mockDismissUndoToast = vi.fn();
-const mockUpdateTodo = vi.fn().mockResolvedValue(undefined);
-
-vi.mock('@/lib/db', () => ({
-  updateTodo: (...args: unknown[]) => mockUpdateTodo(...args),
-}));
+const mockUndoPendingDelete = vi.fn().mockResolvedValue(undefined);
 
 vi.mock('@/stores/useUIStore', () => ({
   useUIStore: vi.fn(),
@@ -18,7 +13,7 @@ import { useUIStore } from '@/stores/useUIStore';
 function setStoreState(undoPendingTodo: { id: string; text: string } | null) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (useUIStore as unknown as ReturnType<typeof vi.fn>).mockImplementation((selector: (s: any) => unknown) =>
-    selector({ undoPendingTodo, dismissUndoToast: mockDismissUndoToast }),
+    selector({ undoPendingTodo, undoPendingDelete: mockUndoPendingDelete }),
   );
 }
 
@@ -51,12 +46,11 @@ describe('UndoToast', () => {
     expect(screen.getByRole('button', { name: 'Undo' })).toBeTruthy();
   });
 
-  it('clicking Undo calls dismissUndoToast and updateTodo with deletedAt null', async () => {
+  it('clicking Undo calls undoPendingDelete (single source of truth for undo)', () => {
     setStoreState({ id: 'abc', text: 'Buy milk' });
     render(<UndoToast />);
     fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
-    expect(mockDismissUndoToast).toHaveBeenCalledTimes(1);
-    await vi.waitFor(() => expect(mockUpdateTodo).toHaveBeenCalledWith('abc', { deletedAt: null }));
+    expect(mockUndoPendingDelete).toHaveBeenCalledTimes(1);
   });
 
   it('does not render a close button', () => {

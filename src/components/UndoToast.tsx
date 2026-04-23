@@ -1,23 +1,12 @@
 'use client';
 
-import { updateTodo } from '@/lib/db';
 import { useUIStore } from '@/stores/useUIStore';
 
 export function UndoToast() {
   const undoPendingTodo = useUIStore((s) => s.undoPendingTodo);
-  const dismissUndoToast = useUIStore((s) => s.dismissUndoToast);
+  const undoPendingDelete = useUIStore((s) => s.undoPendingDelete);
 
   if (!undoPendingTodo) return null;
-
-  async function handleUndo() {
-    const id = undoPendingTodo!.id;
-    dismissUndoToast();
-    try {
-      await updateTodo(id, { deletedAt: null });
-    } catch (err) {
-      console.error('UndoToast: updateTodo failed', err);
-    }
-  }
 
   return (
     <div
@@ -30,7 +19,7 @@ export function UndoToast() {
       </span>
       <button
         type="button"
-        onClick={() => void handleUndo()}
+        onClick={() => void undoPendingDelete()}
         className="text-sm font-medium text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         Undo

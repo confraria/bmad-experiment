@@ -1,10 +1,19 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+
+const mockUpdateTodo = vi.fn().mockResolvedValue(undefined);
+
+vi.mock('@/lib/db', () => ({
+  updateTodo: (...args: unknown[]) => mockUpdateTodo(...args),
+}));
+
 import { useUIStore } from '../useUIStore';
 
 describe('useUIStore', () => {
   beforeEach(() => {
+    mockUpdateTodo.mockClear();
+    mockUpdateTodo.mockResolvedValue(undefined);
     useUIStore.getState().dismissUndoToast();
-    useUIStore.setState({ undoPendingTodo: null });
+    useUIStore.setState({ undoPendingTodo: null, helpOverlayOpen: false });
     vi.useFakeTimers();
   });
 
@@ -54,5 +63,48 @@ describe('useUIStore', () => {
   it('dismissUndoToast when no toast is pending does not throw', () => {
     expect(() => useUIStore.getState().dismissUndoToast()).not.toThrow();
     expect(useUIStore.getState().undoPendingTodo).toBeNull();
+  });
+
+  describe('helpOverlayOpen', () => {
+    it('defaults to false', () => {
+      expect(useUIStore.getState().helpOverlayOpen).toBe(false);
+    });
+
+    it('toggleHelpOverlay flips it true, then false, then true', () => {
+      useUIStore.getState().toggleHelpOverlay();
+      expect(useUIStore.getState().helpOverlayOpen).toBe(true);
+
+      useUIStore.getState().toggleHelpOverlay();
+      expect(useUIStore.getState().helpOverlayOpen).toBe(false);
+
+      useUIStore.getState().toggleHelpOverlay();
+      expect(useUIStore.getState().helpOverlayOpen).toBe(true);
+    });
+  });
+
+  describe('undoPendingDelete', () => {
+    it('calls updateTodo(id, { deletedAt: null }) and clears state when a toast is pending', async () => {
+      useUIStore.getState().showUndoToast('xyz', 'Walk dog');
+      await useUIStore.getState().undoPendingDelete();
+
+      expect(mockUpdateTodo).toHaveBeenCalledTimes(1);
+      expect(mockUpdateTodo).toHaveBeenCalledWith('xyz', { deletedAt: null });
+      expect(useUIStore.getState().undoPendingTodo).toBeNull();
+    });
+
+    it('resolves without calling updateTodo when no toast is pending', async () => {
+      expect(useUIStore.getState().undoPendingTodo).toBeNull();
+      await expect(useUIStore.getState().undoPendingDelete()).resolves.toBeUndefined();
+      expect(mockUpdateTodo).not.toHaveBeenCalled();
+    });
+
+    it('catches updateTodo rejection without throwing', async () => {
+      mockUpdateTodo.mockRejectedValueOnce(new Error('boom'));
+      useUIStore.getState().showUndoToast('xyz', 'Walk dog');
+
+      await expect(useUIStore.getState().undoPendingDelete()).resolves.toBeUndefined();
+      expect(mockUpdateTodo).toHaveBeenCalledTimes(1);
+      expect(useUIStore.getState().undoPendingTodo).toBeNull();
+    });
   });
 });
