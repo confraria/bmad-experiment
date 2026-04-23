@@ -55,6 +55,33 @@ npm run lint         # ESLint
 npm run icons        # Regenerate PWA icons from SVG
 ```
 
+## Run with Docker
+
+### Locally (build + run)
+
+```bash
+docker compose up -d --build   # start in the background, rebuild on changes
+docker compose logs -f app     # tail logs
+docker compose down            # stop (named volume survives)
+```
+
+The app listens on `http://localhost:3000`. SQLite data persists in a Docker-managed named volume (`todos-data`) across `docker compose down` / `up` cycles.
+
+### Published image (GHCR)
+
+```bash
+docker run -d \
+  -p 3000:3000 \
+  -v todos-data:/data \
+  -e DATABASE_URL=file:/data/todos.db \
+  ghcr.io/confraria/bmad-experiment:latest
+```
+
+### Notes
+
+- PWA install prompts require an HTTPS origin. For a proper PWA experience behind Docker, front the container with a reverse proxy that terminates TLS (Caddy, Traefik, Cloudflare Tunnel).
+- Database migrations run automatically at container start via `prisma migrate deploy`. First boot creates the schema; subsequent boots are a no-op.
+
 ## The BMad Method side of things
 
 This project was built as an experiment in using BMad as the planning + execution loop. The flow for every feature:

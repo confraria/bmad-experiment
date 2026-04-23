@@ -535,6 +535,30 @@ So that changes ship continuously.
 **When** a user visits,
 **Then** the service worker installs correctly, PWA install prompt is available on supporting browsers, and initial sync succeeds.
 
+### Story 3.10: Docker deployment
+
+As a developer,
+I want the app packaged as a self-contained Docker image with a local `docker compose` setup,
+So that it can run anywhere (self-hosted or any container host) without depending on Vercel.
+
+**Acceptance Criteria:**
+
+**Given** a multi-stage `Dockerfile` at the repo root,
+**When** `docker build -t bmad-experiment .` runs,
+**Then** a production image builds successfully using Next.js `output: 'standalone'`, with Prisma client generated, Serwist service worker baked in, and no dev dependencies in the runtime layer.
+
+**Given** a `docker-compose.yml`,
+**When** `docker compose up` is run,
+**Then** the app listens on `http://localhost:3000`, Prisma migrations apply to a SQLite file stored on a named volume, and the volume survives `docker compose down && docker compose up` cycles (data persists).
+
+**Given** a `.github/workflows/docker.yml` workflow,
+**When** a commit lands on `main` (or the workflow is manually dispatched),
+**Then** the image builds and pushes to GHCR (`ghcr.io/confraria/bmad-experiment`) tagged `latest` + the short commit SHA, using `GITHUB_TOKEN` (no additional secrets required).
+
+**Given** the published GHCR image,
+**When** a user pulls and runs it with `DATABASE_URL` pointing to a mounted SQLite file,
+**Then** the app serves normally, including CRUD, offline sync engine, and the `/api/errors` + `/api/sync` endpoints.
+
 ## Epic 4: Power use
 
 Enable the user to operate the app entirely from the keyboard on desktop, with a discoverable help overlay.

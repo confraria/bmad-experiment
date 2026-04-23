@@ -1,5 +1,5 @@
 # generated: 2026-04-21
-# last_updated: 2026-04-23 (Story 3.8 done — CI pipeline)
+# last_updated: 2026-04-23 (Story 3.10 done — Docker deployment)
 # project: bmad-experiment
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-04-21
-last_updated: 2026-04-23 (Story 3.8 done — CI pipeline)
+last_updated: 2026-04-23 (Story 3.10 done — Docker deployment)
 project: bmad-experiment
 project_key: NOKEY
 tracking_system: file-system
@@ -71,6 +71,7 @@ development_status:
   3-7-client-error-reporting-endpoint: done
   3-8-ci-pipeline: done
   3-9-vercel-deployment-wiring: dropped
+  3-10-docker-deployment: done
   epic-3-retrospective: done
 
   # Epic 4: Power use
